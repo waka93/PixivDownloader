@@ -7,17 +7,29 @@ This Project allows you download images from famous illustration website [pixiv]
 
 ## 1. Requirements
 
-⋅⋅⋅python(version >= 3.5)
+python(version >= 3.5)
 
-⋅⋅⋅requests
+requests
 
-⋅⋅⋅bs4
+bs4
 
-⋅⋅⋅aiohttp
+aiohttp
    
 ## 2.Tutorial
+
+#### query keywords
    
-   #### query keywords
+Keywords | Type
+--- | ---
+tags | List of Strings 
+views_low_threshold | String
+views_high_threshold | String
+likes_low_threshold | String
+likes_high_threshold | String
+bookmarks_low_threshold | String
+bookmarks_high_threshold | String
+R_18_filter | Boolean
+R_18G_filter | Boolean
 
    
 
