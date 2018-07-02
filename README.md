@@ -1,5 +1,5 @@
 # PixivDownloader
-Download images from pixiv 
+Download images from pixiv in an asynchronous way
 
 This Project allows you download images from famous illustration website [pixiv](https://www.pixiv.net) with your customized query
 
@@ -63,6 +63,12 @@ Start downloading
 ```python
 pixiv.download('path_to_folder')
 ```
-   
+
+Result
+```python
+Running time: 38.940521001815796
+```
+
+![demo](https://github.com/waka93/PixivDownloader/blob/master/images/20180702-023013.png)
 
 
