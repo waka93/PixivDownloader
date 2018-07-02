@@ -11,6 +11,8 @@ python(version >= 3.5)
 
 requests
 
+PIL
+
 bs4
 
 aiohttp
