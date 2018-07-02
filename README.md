@@ -22,7 +22,7 @@ aiohttp
 #### Query keywords
    
 Keywords | Type | Default
---- | ---
+--- | --- | ---
 tags | List of Strings | Must input
 views_low_threshold | Int | None
 views_high_threshold | Int | None
