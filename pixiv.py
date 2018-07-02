@@ -272,19 +272,3 @@ class Pixiv:
         """
         tasks = [self.download_one_illust(illust_id) for illust_id in self.illust_to_crawl]
         await asyncio.gather(*tasks)
-
-
-if __name__ == '__main__':
-    start = time.time()
-    pixiv = Pixiv(
-        tags=['スカサハ', 'FGO'],
-        bookmarks_low_threshold=10000,
-        likes_low_threshold=10000,
-        views_low_threshold=200000,
-        R_18_filter=True,
-        R_18G_filter=True,
-    )
-    pixiv.login()
-    pixiv.search()
-    pixiv.download()
-    print('Running time:', time.time()-start)
