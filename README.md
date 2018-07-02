@@ -22,12 +22,12 @@ aiohttp
 Keywords | Type
 --- | ---
 tags | List of Strings 
-views_low_threshold | String
-views_high_threshold | String
-likes_low_threshold | String
-likes_high_threshold | String
-bookmarks_low_threshold | String
-bookmarks_high_threshold | String
+views_low_threshold | Int
+views_high_threshold | Int
+likes_low_threshold | Int
+likes_high_threshold | Int
+bookmarks_low_threshold | Int
+bookmarks_high_threshold | Int
 R_18_filter | Boolean
 R_18G_filter | Boolean
 
