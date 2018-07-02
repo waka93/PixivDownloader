@@ -5,16 +5,16 @@ HEADERS = {
 }
 
 FORM_DATA = {
-    'pixiv_id': 'wangruoteng@gmail.com',
+    'pixiv_id': '',  # Your login ID
     'captcha': '',
     'g_recaptcha_response': '',
-    'password': 'sidmeier',
+    'password': '',  # Your password
     'post_key': '',
     'source': 'pc',
     'return_to': 'https://www.pixiv.net',
 }
 
-NICKNAME = 'waka'
+NICKNAME = ''  # Your nickname
 
 INDEX_URL = 'http://www.pixiv.net/'
 LOGIN_URL = 'https://accounts.pixiv.net/api/login?lang=en'
