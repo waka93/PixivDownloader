@@ -17,7 +17,7 @@ aiohttp
    
 ## 2.Tutorial
 
-#### query keywords
+#### Query keywords
    
 Keywords | Type
 --- | ---
@@ -31,6 +31,38 @@ bookmarks_high_threshold | String
 R_18_filter | Boolean
 R_18G_filter | Boolean
 
+#### Example
+
+Construct a new pixiv object with your customized query
+
+```python
+pixiv = Pixiv(
+        tags=['スカサハ', 'FGO'],
+        bookmarks_low_threshold=10000,
+        likes_low_threshold=10000,
+        views_low_threshold=200000,
+        R_18_filter=True,
+        R_18G_filter=True,
+    )
+```
+
+Login pixiv with your pixiv id and password
+
+```python
+pixiv.login()
+```
+
+Start searching
+
+```python
+pixiv.search()
+```
+
+Start downloading
+
+```python
+pixiv.download('path_to_folder')
+```
    
 
 
