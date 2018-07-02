@@ -21,17 +21,17 @@ aiohttp
 
 #### Query keywords
    
-Keywords | Type
+Keywords | Type | Default
 --- | ---
-tags | List of Strings 
-views_low_threshold | Int
-views_high_threshold | Int
-likes_low_threshold | Int
-likes_high_threshold | Int
-bookmarks_low_threshold | Int
-bookmarks_high_threshold | Int
-R_18_filter | Boolean
-R_18G_filter | Boolean
+tags | List of Strings | Must input
+views_low_threshold | Int | None
+views_high_threshold | Int | None
+likes_low_threshold | Int | None
+likes_high_threshold | Int | None
+bookmarks_low_threshold | Int | None
+bookmarks_high_threshold | Int | None
+R_18_filter | Boolean | False
+R_18G_filter | Boolean | False
 
 #### Example
 
