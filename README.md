@@ -46,7 +46,7 @@ pixiv = Pixiv(
     )
 ```
 
-Login pixiv with your pixiv id and password
+Set your pixiv ID and password and login in settings.py pixiv with them
 
 ```python
 pixiv.login()
