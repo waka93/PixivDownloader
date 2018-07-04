@@ -30,7 +30,7 @@ pixiv.login()
 
 #### Search
 
-Keywords | Type | Default | Choices
+Keywords | Type | Default | Notes
 --- | --- | --- | ---
 word | List of Strings | Must input | 
 search_target | Str | 'partial_match_for_tags' | 'partial_match_for_tags', 'exact_match_for_tags', 'title_and_caption'
@@ -46,7 +46,7 @@ pixiv.search(word=['スカサハ', 'FGO'])
 
 Customize your own query that narrow down search results
 
-Keywords | Type | Default | Choices
+Keywords | Type | Default | Notes
 --- | --- | --- | ---
 views_lower_bound | Int | None |
 views_upper_bound | Int | None |
