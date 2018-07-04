@@ -30,6 +30,13 @@ pixiv.login()
 
 #### Search
 
+Keywords | Type | Default | Choices
+--- | --- | --- | ---
+word | List of Strings | Must input | 
+search_target | Str | 'partial_match_for_tags' | 'partial_match_for_tags', 'exact_match_for_tags', 'title_and_caption'
+sort | Str | 'date_desc' | 'date_desc', 'date_asc'
+filter | Str | 'for_ios' | 'for_ios'
+
 ```python
 pixiv.search()
 ```
