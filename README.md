@@ -16,7 +16,7 @@ aiohttp
 
 #### Create A New Object
 
-Construct a new pixiv object. Ignore username and password if you want use refresh token to login
+Construct a new pixiv object. Ignore username and password if you want use refresh token to login.
 
 ```python
 pixiv = Pixiv(username=USERNAME, password=PASSWORD)
