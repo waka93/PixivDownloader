@@ -133,29 +133,3 @@ class PixivBase:
             return True
         return False
 
-    async def request(self, *args, **kwargs):
-        if self.access_token and self.token_type:
-            self.headers['Authorization'] = self.token_type[0].upper() + self.token_type[1:] + ' ' + self.access_token
-            async with aiohttp.ClientSession(headers=self.headers) as session:
-                method = kwargs['method']
-                del kwargs['method']
-                if method == 'GET':
-                    return await session.get(*args, **kwargs)
-                elif method == 'POST':
-                    return await session.post(*args, **kwargs)
-        else:
-            async with aiohttp.ClientSession(headers=self.headers) as session:
-                method = kwargs['method']
-                del kwargs['method']
-                if method == 'GET':
-                    return await session.get(*args, **kwargs)
-                elif method == 'POST':
-                    return await session.post(*args, **kwargs)
-
-    def search(self):
-        raise MethodNotImplementedError('{} Not Implemented'.format(self.search.__name__))
-
-
-if __name__ == '__main__':
-    pixiv = PixivBase()
-    pixiv.login()
