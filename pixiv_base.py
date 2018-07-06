@@ -100,6 +100,7 @@ class PixivBase:
                     print('Enter your username and password')
                     self.username = input('Enter your username (If you choose to provide refresh token, just press return):\nUsername: ')
                     self.password = input('Enter your password (If you choose to provide refresh token, just press return):\nPassword: ')
+                    self.__grant_type = 'password'
                     return self.login()
             except Exception as e:
                 print(e)
@@ -108,8 +109,12 @@ class PixivBase:
         else:
             print('Login Failed! Either provide username and password or refresh token.')
             print('Enter your username and password or paste refresh token to refresh_token')
-            self.username = input('Enter your username (If you choose to provide refresh token, just press return):\n')
-            self.password = input('Enter your password (If you choose to provide refresh token, just press return):\n')
+            self.username = input('Enter your username (If you choose to provide refresh token, just press return):\nUsername: ')
+            self.password = input('Enter your password (If you choose to provide refresh token, just press return):\nPassword: ')
+            if self.username and self.password:
+                self.__grant_type = 'password'
+            else:
+                self.__grant_type = 'refresh_token'
             return self.login()
 
     def logout(self, hold=True):
