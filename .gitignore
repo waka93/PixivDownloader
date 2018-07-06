@@ -109,5 +109,6 @@ refresh_token
 # testing stuff
 test.py
 
-# downloaded images
+# downloaded stuff
 images/
+novels/
