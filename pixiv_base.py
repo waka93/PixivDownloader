@@ -142,11 +142,10 @@ class PixivBase:
         return False
 
     async def get_page(self, url, params):
-        proxy = 'http://10.0.0.251:8888'
         if self.access_token and self.token_type:
             self.headers['Authorization'] = self.token_type[0].upper() + self.token_type[1:] + ' ' + self.access_token
         async with aiohttp.ClientSession(headers=self.headers) as session:
-            async with session.get(url, params=params, proxy=proxy, ssl=False) as response:
+            async with session.get(url, params=params) as response:
                 if response.status == 200:
                     response = await response.text()
                     response = json.loads(response)
