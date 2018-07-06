@@ -48,15 +48,16 @@ Customize your own query that narrow down search results
 
 Keywords | Type | Default | Notes
 --- | --- | --- | ---
-views_lower_bound | Int | None |
-views_upper_bound | Int | None |
-bookmarks_lower_bound | Int | None |
-bookmarks_upper_bound | Int | None |
-type | Str | None | 'illust', 'manga', 'ugoira'
-date_before | Str | None | xxxx-xx-xx(year-month-day)
-date_after | Str | None | xxxx-xx-xx(year-month-day)
-R_18_filter | Boolean | False | 
-R_18G_filter | Boolean | False |
+views_lower_bound | Int |  |
+views_upper_bound | Int |  |
+bookmarks_lower_bound | Int |  |
+bookmarks_upper_bound | Int |  |
+type | Str |  | 'illust', 'manga', 'ugoira'
+date_before | Str |  | xxxx-xx-xx(year-month-day)
+date_after | Str |  | xxxx-xx-xx(year-month-day)
+R_18_filter | Boolean |  |
+R_18G_filter | Boolean |  |
+rank | Int | | only works with the results you get from ranking method
 
 ```python
 pixiv.filter(views_lower_bound=200000, bookmarks_lower_bound=10000, R_18_filter=True, R_18G_filter=True)
