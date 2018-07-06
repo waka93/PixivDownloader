@@ -118,13 +118,13 @@ class Pixiv(PixivBase):
             illusts_slice = pool.map(self._filter, params)
 
             print('{} results found.'.format(len(self._merge_dict(illusts_slice))))
-            command = input('Do you want to keep result? Type \'yes\' to keep, \'no\' to abandon.\n')
+            command = input('Do you want to keep result? Type \'yes\' to keep, \'no\' to abandon.\n-> ')
+            while command.upper() not in ['YES', 'NO']:
+                command = input('Command not found. Type \'yes\' to keep, \'no\' to abandon.\n-> ')
             if command.upper() == 'YES':
                 self.illusts = self._merge_dict(illusts_slice)
             elif command.upper() == 'NO':
                 pass
-            else:
-                print('Command not found. Filtered results abandoned')
 
         return self
 
@@ -134,7 +134,7 @@ class Pixiv(PixivBase):
             return self
 
         if not path:
-            path = input('Please enter path you want to save images in\n')
+            path = input('Please enter path you want to save demo in\n-> ')
             return self.download(path)
 
         loop = asyncio.get_event_loop()
@@ -171,6 +171,7 @@ class Pixiv(PixivBase):
 
     def empty(self):
         self.illusts = {}
+        self.__offset_set = set([i*30 for i in range(self.__batch)])
         return self
 
     async def _search(self, base_search_url, params, offset):
@@ -302,7 +303,7 @@ class Pixiv(PixivBase):
 
     async def _get_image(self, semaphore, illust, path):
         await semaphore.acquire()
-        headers = pixiv.headers
+        headers = self.headers
         headers['Referer'] = 'https://app-api.pixiv.net/'
         title = illust[0]
         username = illust[1]
@@ -325,6 +326,7 @@ class Pixiv(PixivBase):
                     response = await response.read()
                     image = Image.open(io.BytesIO(response))
                     image.save('{path}/{filename}'.format(path=path, filename=filename))
+                    image.close()
                 else:
                     print('Download Failed', filename)
         semaphore.release()
@@ -356,14 +358,3 @@ class Pixiv(PixivBase):
     def _novel_ranking(self):
         pass
 
-
-if __name__ == '__main__':
-    pixiv = Pixiv()
-    pixiv.login()
-    print('Searching...')
-    pixiv.search(word=['スカサハ', 'FGO'])
-    print('{} results founded'.format(len(pixiv.illusts)))
-    pixiv.filter(views_lower_bound=200000, bookmarks_lower_bound=10000, R_18_filter=True, R_18G_filter=True)
-    print('Downloading...')
-    pixiv.download('images')
-    print('Download finished')

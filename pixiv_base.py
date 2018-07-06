@@ -98,8 +98,8 @@ class PixivBase:
                 else:
                     print('Login Failed! Response Status:', resp.status_code)
                     print('Enter your username and password')
-                    self.username = input('Enter your username (If you choose to provide refresh token, just press return):\n')
-                    self.password = input('Enter your password (If you choose to provide refresh token, just press return):\n')
+                    self.username = input('Enter your username (If you choose to provide refresh token, just press return):\nUsername: ')
+                    self.password = input('Enter your password (If you choose to provide refresh token, just press return):\nPassword: ')
                     return self.login()
             except Exception as e:
                 print(e)
