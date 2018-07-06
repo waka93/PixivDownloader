@@ -108,3 +108,6 @@ refresh_token
 
 # testing stuff
 test.py
+
+# downloaded images
+images/
