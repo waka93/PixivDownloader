@@ -13,7 +13,7 @@ import io
 import asyncio
 import aiohttp
 
-from pixiv_base import PixivBase
+from pixiv_base import PixivBase, PixivDB
 
 
 class Pixiv(PixivBase):
@@ -21,8 +21,11 @@ class Pixiv(PixivBase):
     __batch = 30
     __offset_set = set([i*30 for i in range(__batch)])
 
-    illusts = {}  # Store illust results
-    tags = {}  # Store trending tags
+    illusts = PixivDB()  # Store illusts
+    novels = PixivDB()  # Store novels
+    tags = PixivDB()  # Store trending tags
+
+    __downloaded_novels = set()
 
     def personal_data(self):
         if not self.login_data:
@@ -81,6 +84,8 @@ class Pixiv(PixivBase):
 
     def filter(self, **kwargs):
         """
+        This method has been deprecated. Use PixivDB.filter instead
+        A filter on illusts. Same as PixivDB.filter
         Keywords List:
 
         views_lower_bound: Int
@@ -99,6 +104,9 @@ class Pixiv(PixivBase):
         :param kwargs:
         :return:
         """
+
+        print('This method has been deprecated. Use PixivDB.filter instead')
+
         if kwargs:
 
             num_of_thread = 10
@@ -130,9 +138,19 @@ class Pixiv(PixivBase):
 
         return self
 
-    def download(self, path, offset=None):
-        if not self.illusts:
-            print('No images to download')
+    def download(self, path, _type='illust'):
+        """
+        Download illusts or novels
+        :param path: Str path to folder
+        :param _type: Str ['illust', 'novel']
+        :return:
+        """
+        if _type.upper() == 'ILLUST' and not self.illusts:
+            print('No illusts to download')
+            return self
+
+        if _type.upper() == 'NOVEL' and not self.novels:
+            print('No novels to download')
             return self
 
         if not path:
@@ -140,7 +158,11 @@ class Pixiv(PixivBase):
             return self.download(path)
 
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(self._download(path))
+
+        if not _type.upper() == 'NOVEL':
+            loop.run_until_complete(self._download_illust(path))
+        else:
+            loop.run_until_complete(self._download_novel(path))
 
         return self
 
@@ -149,7 +171,7 @@ class Pixiv(PixivBase):
 
     def trending(self, _type):
         """
-        get trending tags
+        Get trending tags
         :param _type: Str ['illust', 'manga', 'novel']
         :return:
         """
@@ -226,7 +248,7 @@ class Pixiv(PixivBase):
                 if response.status == 200:
                     response = await response.text()
                     response = json.loads(response)
-                    if response['illusts']:
+                    if response.__contains__('illusts') and response['illusts']:
                         for illust in response['illusts']:
                             self.illusts[str(illust['id'])] = illust
                         if offset is not None:
@@ -234,6 +256,13 @@ class Pixiv(PixivBase):
                                 self.__offset_set.add(offset + self.__batch*30)
                             self.__offset_set.remove(offset)
                         await asyncio.sleep(.01)
+                    elif response.__contains__('novels') and response['novels']:
+                        for novel in response['novels']:
+                            self.novels[str(novel['id'])] = novel
+                        if offset is not None:
+                            if offset + self.__batch * 30 <= 5000:
+                                self.__offset_set.add(offset + self.__batch*30)
+                            self.__offset_set.remove(offset)
                     else:
                         if offset:
                             self.__offset_set.remove(offset)
@@ -319,7 +348,7 @@ class Pixiv(PixivBase):
             buffer.update(d)
         return buffer
 
-    async def _download(self, path, offset=None):
+    async def _download_illust(self, path):
         semaphore = asyncio.Semaphore(value=50)
 
         illust_info = []
@@ -361,6 +390,49 @@ class Pixiv(PixivBase):
                     image.close()
                 else:
                     print('Download Failed', filename)
+        semaphore.release()
+
+    async def _download_novel(self, path):
+        """
+        asynchronous download all novels to path
+        :param path: Str
+        :return:
+        """
+        semaphore = asyncio.Semaphore(value=50)
+        novel_info = [[novel['title'], novel['user']['name'], novel['id']] for novel in self.novels.values()]
+        tasks = [self._get_novel(semaphore, novel, path) for novel in novel_info]
+        await asyncio.gather(*tasks)
+
+    async def _get_novel(self, semaphore, novel, path):
+        """
+        asynchronous download one novel and its series
+        :param semaphore: Semaphore object. Control max requests at one time
+        :param novel: List
+        :param path: Str
+        :return:
+        """
+        await semaphore.acquire()
+        if self.access_token and self.token_type:
+            self.headers['Authorization'] = self.token_type[0].upper() + self.token_type[1:] + ' ' + self.access_token
+        title = novel[0].replace('/', ':')
+        username = novel[1].replace('/', ':')
+        url = 'https://app-api.pixiv.net/v1/novel/text?novel_id={}'.format(novel[2])
+        filename = '{title}-{username}'.format(title=title, username=username)
+        self.__downloaded_novels.add(novel[2])
+        print('Downloading', filename)
+        async with aiohttp.ClientSession(headers=self.headers) as session:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    response = await response.text()
+                    response = json.loads(response)
+                    if response['series_prev'] and response['series_prev']['id'] not in self.__downloaded_novels:
+                        novel_prev = [response['series_prev']['title'], response['series_prev']['user']['name'], response['series_prev']['id']]
+                        await self._get_novel(semaphore, novel_prev, path)
+                    with open('{path}/{filename}'.format(path=path, filename=filename), 'a+') as f:
+                        f.write(response['novel_text'])
+                    if response['series_next'] and response['series_next']['id'] not in self.__downloaded_novels:
+                        novel_next = [response['series_next']['title'], response['series_next']['user']['name'], response['series_next']['id']]
+                        await self._get_novel(semaphore, novel_next, path)
         semaphore.release()
 
     def _trending(self, _type):
