@@ -3,9 +3,12 @@
 import requests
 
 import json
+import copy
 
 import asyncio
 import aiohttp
+
+from multiprocessing.dummy import Pool as ThreadPool
 
 from errors import MethodNotImplementedError
 
@@ -148,4 +151,146 @@ class PixivBase:
                     response = await response.text()
                     response = json.loads(response)
                     return response
+
+
+class PixivDB(dict):
+    def filter(self, **kwargs):
+        """
+        Keywords List:
+
+        views_lower_bound: Int
+        views_upper_bound: Int
+        bookmarks_lower_bound: Int
+        bookmarks_upper_bound: Int
+        type: ['illust', 'manga', 'ugoira']
+        date_before: str  xxxx-xx-xx
+        date_after: str xxxx-xx-xx
+        R_18_filter: Boolean
+        R_18G_filter: Boolean
+
+        The following parameter only works with the results you get from ranking method
+        rank: Int
+
+        :param kwargs:
+        :return:
+        """
+        if kwargs:
+
+            num_of_thread = 10
+            query_info = {}
+
+            for key, value in kwargs.items():
+                query_info[key] = value
+
+            if query_info.__contains__('views_lower_bound') and query_info.__contains__('views_upper_bound'):
+                assert query_info['views_lower_bound'] <= query_info['views_upper_bound']
+            if query_info.__contains__('bookmarks_lower_bound') and query_info.__contains__('bookmarks_upper_bound'):
+                assert query_info['bookmarks_lower_bound'] <= query_info['bookmarks_upper_bound']
+            if query_info.__contains__('date_before') and query_info.__contains__('date_after'):
+                assert query_info['date_before'] >= query_info['date_after']
+
+            items_slice = self._dict_slice(self, num_of_thread)
+            params = list(zip(items_slice, [query_info for i in range(num_of_thread)]))
+            pool = ThreadPool()
+            items_slice = pool.map(self._filter, params)
+
+            print('{} results found.'.format(len(self._merge_dict(items_slice))))
+            command = input('Do you want to keep result? Type \'yes\' to keep, \'no\' to abandon.\n-> ')
+            while command.upper() not in ['YES', 'NO']:
+                command = input('Command not found. Type \'yes\' to keep, \'no\' to abandon.\n-> ')
+            if command.upper() == 'YES':
+                self.empty()
+                self.update(self._merge_dict(items_slice))
+            elif command.upper() == 'NO':
+                pass
+
+        return PixivDB(self)
+
+    def empty(self):
+        for key in copy.copy(self).keys():
+            self.pop(key)
+        return self
+
+    @staticmethod
+    def _filter(params):
+        illusts = params[0]
+        query_info = params[1]
+        for key, value in copy.copy(illusts).items():
+            if query_info.__contains__('views_lower_bound'):
+                if not value['total_view'] >= query_info['views_lower_bound']:
+                    illusts.pop(key)
+                    continue
+            if query_info.__contains__('views_upper_bound'):
+                if not value['total_view'] <= query_info['views_upper_bound']:
+                    illusts.pop(key)
+                    continue
+            if query_info.__contains__('bookmarks_lower_bound'):
+                if not value['total_bookmarks'] >= query_info['bookmarks_lower_bound']:
+                    illusts.pop(key)
+                    continue
+            if query_info.__contains__('bookmarks_upper_bound'):
+                if not value['total_bookmarks'] <= query_info['bookmarks_lower_bound']:
+                    illusts.pop(key)
+                    continue
+            if query_info.__contains__('type'):
+                if not value['type'] in query_info['type'] or not value['type'] == query_info['type']:
+                    illusts.pop(key)
+                    continue
+            if query_info.__contains__('date_before'):
+                if not value['create_date'] <= query_info['date_before']:
+                    illusts.pop(key)
+                    continue
+            if query_info.__contains__('date_after'):
+                if not value['create_date'] >= query_info['date_after']:
+                    illusts.pop(key)
+                    continue
+            if query_info.__contains__('R_18_filter'):
+                if query_info['R_18_filter'] and 'R-18' in [i['name'] for i in value['tags']]:
+                    illusts.pop(key)
+                    continue
+            if query_info.__contains__('R_18G_filter'):
+                if query_info['R_18G_filter'] and 'R-18G' in [i['name'] for i in value['tags']]:
+                    illusts.pop(key)
+                    continue
+            if query_info.__contains__('rank'):
+                if not value['rank'] <= query_info['rank']:
+                    illusts.pop(key)
+                    continue
+        return illusts
+
+    @staticmethod
+    def _dict_slice(illusts, num):
+        """
+        Slice a dict into a list of sub_dict
+        :param num: Int
+        :param illusts: Dict
+        :return: List of dicts
+        """
+        chunk = len(illusts)//num
+        items_slice = []
+        buffer = {}
+        count = 0
+        for key, value in illusts.items():
+            buffer.update({key:value})
+            count += 1
+            if count%chunk == 0 and count <= chunk*(num-1):
+                items_slice.append(buffer)
+                buffer = {}
+        items_slice.append(buffer)
+        return items_slice
+
+    @staticmethod
+    def _merge_dict(items_slice):
+        """
+        Merge dicts into a dict
+        :param items_slice: List of dicts
+        :return: dict
+        """
+        buffer = {}
+        for d in items_slice:
+            buffer.update(d)
+        return buffer
+
+
+
 
