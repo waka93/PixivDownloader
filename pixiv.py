@@ -206,18 +206,17 @@ class Pixiv(PixivBase):
 
         loop = asyncio.get_event_loop()
 
-        if _type.upper() == 'ILLUST':
-            loop.run_until_complete(self._ranking_illust(mode, date))
-        elif _type.upper() == 'MANGA':
-            loop.run_until_complete(self._ranking_manga(mode, date))
+        if _type.upper() == 'ILLUST' or _type.upper() == 'MANGA':
+            loop.run_until_complete(self._ranking_illust(_type, mode, date))
         elif _type.upper() == 'NOVEL':
             loop.run_until_complete(self._ranking_novel(mode, date))
 
         return self
 
     def empty(self):
-        self.illusts = {}
-        self.tags = {}
+        self.illusts = PixivDB()
+        self.novels = PixivDB()
+        self.tags = PixivDB()
         self.__offset_set = set([i*30 for i in range(self.__batch)])
         return self
 
@@ -240,11 +239,10 @@ class Pixiv(PixivBase):
                 await asyncio.gather(*tasks)
 
     async def _get_search_result(self, url, params=None, offset=None):
-        proxy = 'http://10.0.0.251:8888'
         if self.access_token and self.token_type:
             self.headers['Authorization'] = self.token_type[0].upper() + self.token_type[1:] + ' ' + self.access_token
         async with aiohttp.ClientSession(headers=self.headers) as session:
-            async with session.get(url, params=params, proxy=proxy, ssl=False) as response:
+            async with session.get(url, params=params) as response:
                 if response.status == 200:
                     response = await response.text()
                     response = json.loads(response)
@@ -435,6 +433,9 @@ class Pixiv(PixivBase):
                         await self._get_novel(semaphore, novel_next, path)
         semaphore.release()
 
+    def _new_from_follows(self):
+        pass
+
     def _trending(self, _type):
         if _type.upper() == 'ILLUST' or _type.upper() == 'MANGA':
             url = 'https://app-api.pixiv.net/v1/trending-tags/illust?filter=for_ios'
@@ -443,10 +444,9 @@ class Pixiv(PixivBase):
         else:
             _type = input("Please enter what kind of trending tags you want to get ['illust', 'novel']:\n")
             return self.trending(_type)
-        proxies = {'http': 'http://10.0.0.251:8888'}
         if self.access_token and self.token_type:
             self.headers['Authorization'] = self.token_type[0].upper() + self.token_type[1:] + ' ' + self.access_token
-        response = requests.get(url, headers=self.headers, proxies=proxies, verify=False)
+        response = requests.get(url, headers=self.headers)
         if response.status_code == 200:
             response = json.loads(response.text)
             for item in response['trend_tags']:
@@ -464,32 +464,115 @@ class Pixiv(PixivBase):
     def _recommended_novel(self):
         pass
 
-    async def _ranking_illust(self, mode, date):
+    async def _ranking_illust(self, _type, mode, date):
         """
-        get illust rankings
+        get illust or manga rankings
         :param mode: str ['daily', 'male', 'female', 'original', 'rookie', 'weekly', 'monthly', 'past']
         :param mode: str [xxxx-xx-xx] only works if mode == 'past'
         :return:
         """
 
-        if mode.upper() in ['DAILY', 'MALE', 'FEMALE', 'WEEKLY', 'MONTHLY', 'PAST']:
-            offset = 480
-        elif mode.upper() in ['ORIGINAL', 'ROOKIE']:
-            offset = 270
+        assert _type.upper() in ['ILLUST', 'MANGA']
+
+        if _type.upper() == 'ILLUST':
+            if mode.upper() in ['DAILY', 'MALE', 'FEMALE', 'WEEKLY', 'MONTHLY', 'PAST']:
+                offset = 480
+            elif mode.upper() in ['ORIGINAL', 'ROOKIE']:
+                offset = 270
+            else:
+                mode = input("Please choose mode in the following list:\n['daily', 'male', 'female', 'original', 'rookie', 'weekly', 'monthly', 'past']\n->")
+                if mode.upper() == 'PAST':
+                    date = input("Please enter date:\n->")
+                return self.ranking('illust', mode, date)
+
+            mode_map = {
+                'daily': 'day',
+                'male': 'day_male',
+                'female': 'day_female',
+                'original': 'week_original',
+                'rookie': 'week_rookie',
+                'weekly': 'week',
+                'monthly': 'month',
+                'past': 'day',
+            }
+
+            params = {
+                'mode': mode_map[mode.lower()],
+                'filter': 'for_ios',
+            }
+
         else:
-            mode = input("Please choose mode in the following list:\n['daily', 'male', 'female', 'original', 'rookie', 'weekly', 'monthly', 'past']\n->")
-            return self.ranking('illust', mode, date)
+            if mode.upper() in ['DAILY', 'PAST']:
+                offset = 480
+            elif mode.upper() in ['WEEKLY', 'MONTHLY', 'ROOKIE']:
+                offset = 90
+            else:
+                mode = input("Please choose mode in the following list:\n['daily', 'rookie', 'weekly', 'monthly', 'past']\n->")
+                if mode.upper() == 'PAST':
+                    date = input("Please enter date:\n->")
+                return self.ranking('manga', mode, date)
+
+            mode_map = {
+                'daily': 'day_manga',
+                'rookie': 'week_rookie_manga',
+                'weekly': 'week_manga',
+                'monthly': 'month_manga',
+                'past': 'day_manga',
+            }
+
+            params = {
+                'mode': mode_map[mode.lower()],
+                'filter': 'for_ios',
+            }
+
+        if mode.upper() == 'PAST':
+            params['date'] = date
 
         url = 'https://app-api.pixiv.net/v1/illust/ranking'
+
+        tasks = []
+        for i in range(offset//30 + 1):
+            params['offset'] = i*30
+            tasks.append(self._get_ranking_illust(url, params=copy.deepcopy(params)))
+        await asyncio.gather(*tasks)
+
+    async def _get_ranking_illust(self, url, params):
+        if self.access_token and self.token_type:
+            self.headers['Authorization'] = self.token_type[0].upper() + self.token_type[1:] + ' ' + self.access_token
+        async with aiohttp.ClientSession(headers=self.headers) as session:
+            async with session.get(url, params=params) as response:
+                if response.status == 200:
+                    response = await response.text()
+                    response = json.loads(response)
+                    offset = params['offset']
+                    if response['illusts']:
+                        for rank, illust in enumerate(response['illusts']):
+                            self.illusts[str(illust['id'])] = illust
+                            self.illusts[str(illust['id'])]['rank'] = offset + rank + 1
+                        await asyncio.sleep(.01)
+
+    async def _ranking_novel(self, mode, date):
+        """
+        get novel rankings
+        :param mode: Str ['daily', 'male', 'female', 'rookie', 'weekly', 'past']
+        :param date: Str xxxx-xx-xx(year-month-day) only works if mode == 'past'
+        :return:
+        """
+
+        if mode.upper() in ['DAILY', 'MALE', 'FEMALE', 'ROOKIE', 'WEEKLY', 'PAST']:
+            offset = 90
+        else:
+            mode = input("Please choose mode in the following list:\n['daily', 'male', 'female', 'rookie', 'weekly', 'past']\n->")
+            if mode.upper() == 'PAST':
+                date = input("Please enter date:\n->")
+            return self.ranking('novel', mode, date)
 
         mode_map = {
             'daily': 'day',
             'male': 'day_male',
             'female': 'day_female',
-            'original': 'week_original',
             'rookie': 'week_rookie',
             'weekly': 'week',
-            'monthly': 'month',
             'past': 'day',
         }
 
@@ -501,31 +584,25 @@ class Pixiv(PixivBase):
         if mode.upper() == 'PAST':
             params['date'] = date
 
+        url = 'https://app-api.pixiv.net/v1/novel/ranking'
+
         tasks = []
         for i in range(offset//30 + 1):
             params['offset'] = i*30
-            tasks.append(self._get_ranking_illust(url, params=copy.deepcopy(params)))
+            tasks.append(self._get_ranking_novel(url, params=copy.deepcopy(params)))
         await asyncio.gather(*tasks)
 
-    async def _get_ranking_illust(self, url, params):
-        proxy = 'http://10.0.0.251:8888'
+    async def _get_ranking_novel(self, url, params):
         if self.access_token and self.token_type:
             self.headers['Authorization'] = self.token_type[0].upper() + self.token_type[1:] + ' ' + self.access_token
-        async with aiohttp.ClientSession(headers=self.headers) as session:
-            async with session.get(url, params=params, proxy=proxy, ssl=False) as response:
+        async with aiohttp.ClientSession(headers=self.headers, ) as session:
+            async with session.get(url, params=params) as response:
                 if response.status == 200:
                     response = await response.text()
                     response = json.loads(response)
                     offset = params['offset']
-                    if response['illusts']:
-                        for rank, illust in enumerate(response['illusts']):
-                            self.illusts[str(illust['id'])] = illust
-                            self.illusts[str(illust['id'])]['rank'] = offset + rank + 1
+                    if response['novels']:
+                        for rank, novel in enumerate(response['novels']):
+                            self.novels[str(novel['id'])] = novel
+                            self.novels[str(novel['id'])]['rank'] = offset + rank + 1
                         await asyncio.sleep(.01)
-
-    def _ranking_manga(self, mode, date):
-        pass
-
-    def _ranking_novel(self, mode, date):
-        pass
-
