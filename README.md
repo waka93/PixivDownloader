@@ -67,8 +67,10 @@ pixiv.filter(views_lower_bound=200000, bookmarks_lower_bound=10000, R_18_filter=
 Download search or filtered results to disk
 
 ```python
-pixiv.download('path_to_folder')
+pixiv.download('images')
 ```
+
+![demo](https://github.com/waka93/PixivDownloader/blob/master/demo/20180702-023013.png)
 
 #### Ranking
 
@@ -86,6 +88,5 @@ pixiv.filter(rank=20)  # choose the first 20 illusts
 pixiv.download('images')  # download them
 ```
 
-![demo](https://github.com/waka93/PixivDownloader/blob/master/demo/20180702-023013.png)
 
 
