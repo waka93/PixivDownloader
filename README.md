@@ -73,6 +73,19 @@ pixiv.download('path_to_folder')
 
 ![demo](https://github.com/waka93/PixivDownloader/blob/master/demo/20180702-023013.png)
 
+#### Trending
+
+Get trending tags
+
+Parameters | Type | Default | Notes
+--- | --- | --- | ---
+type | Str | | 'illust', 'manga', 'novel'
+
+```python
+pixiv.trending('illust')  # get trending tags
+pixiv.tags.keys()  # view trending tags
+```
+
 #### Ranking
 
 Get illust, manga or novel rankings
