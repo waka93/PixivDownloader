@@ -21,7 +21,8 @@ class Pixiv(PixivBase):
     __batch = 30
     __offset_set = set([i*30 for i in range(__batch)])
 
-    illusts = {}
+    illusts = {}  # Store illust results
+    tags = {}  # Store trending tags
 
     def personal_data(self):
         if not self.login_data:
@@ -147,13 +148,13 @@ class Pixiv(PixivBase):
         pass
 
     def trending(self, _type):
+        """
+        get trending tags
+        :param _type: Str ['illust', 'manga', 'novel']
+        :return:
+        """
 
-        loop = asyncio.get_event_loop()
-
-        if _type.upper() == 'ILLUST':
-            loop.run_until_complete(self._trending_illust())
-        elif _type.upper() == 'NOVEL':
-            loop.run_until_complete(self._trending_novel())
+        self._trending(_type)
 
         return self
 
@@ -194,6 +195,7 @@ class Pixiv(PixivBase):
 
     def empty(self):
         self.illusts = {}
+        self.tags = {}
         self.__offset_set = set([i*30 for i in range(self.__batch)])
         return self
 
@@ -361,11 +363,22 @@ class Pixiv(PixivBase):
                     print('Download Failed', filename)
         semaphore.release()
 
-    def _trending_illust(self):
-        pass
-
-    def _trending_novel(self):
-        pass
+    def _trending(self, _type):
+        if _type.upper() == 'ILLUST' or _type.upper() == 'MANGA':
+            url = 'https://app-api.pixiv.net/v1/trending-tags/illust?filter=for_ios'
+        elif _type.upper() == 'NOVEL':
+            url = 'https://app-api.pixiv.net/v1/trending-tags/novel?filter=for_ios'
+        else:
+            _type = input("Please enter what kind of trending tags you want to get ['illust', 'novel']:\n")
+            return self.trending(_type)
+        proxies = {'http': 'http://10.0.0.251:8888'}
+        if self.access_token and self.token_type:
+            self.headers['Authorization'] = self.token_type[0].upper() + self.token_type[1:] + ' ' + self.access_token
+        response = requests.get(url, headers=self.headers, proxies=proxies, verify=False)
+        if response.status_code == 200:
+            response = json.loads(response.text)
+            for item in response['trend_tags']:
+                self.tags[item['tag']] = item
 
     def _recommended_user(self):
         pass
