@@ -70,6 +70,22 @@ Download search or filtered results to disk
 pixiv.download('path_to_folder')
 ```
 
-![demo](https://github.com/waka93/PixivDownloader/blob/master/images/20180702-023013.png)
+#### Ranking
+
+Get illust, manga or novel rankings
+
+Parameters | Type | Default | Notes
+--- | --- | --- | ---
+type | Str | | 'illust', 'manga', 'novel'
+mode | Str | | 'daily', 'male', 'female', 'original', 'rookie', 'weekly', 'monthly', 'past'
+date | Str | None | xxxx-xx-xx(year-month-day) only works if mode == 'past'
+
+```python
+pixiv.ranking('illust', 'daily')  # get daily illust rankings
+pixiv.filter(rank=20)  # choose the first 20 illusts
+pixiv.download('images')  # download them
+```
+
+![demo](https://github.com/waka93/PixivDownloader/blob/master/demo/20180702-023013.png)
 
 
