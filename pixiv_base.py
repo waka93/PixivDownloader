@@ -1,4 +1,5 @@
 # Pixiv api base object
+from functools import reduce
 
 import requests
 
@@ -141,18 +142,8 @@ class PixivBase:
             return True
         return False
 
-    async def get_page(self, url, params):
-        if self.access_token and self.token_type:
-            self.headers['Authorization'] = self.token_type[0].upper() + self.token_type[1:] + ' ' + self.access_token
-        async with aiohttp.ClientSession(headers=self.headers) as session:
-            async with session.get(url, params=params) as response:
-                if response.status == 200:
-                    response = await response.text()
-                    response = json.loads(response)
-                    return response
 
-
-class PixivDB(dict):
+class PixivDB(list):
     def filter(self, **kwargs):
         """
         Keywords List:
@@ -174,8 +165,15 @@ class PixivDB(dict):
         :return:
         """
         if kwargs:
+            if kwargs.__contains__('keep') and kwargs['keep']:
+                command = 'yes'
+                kwargs.pop('keep')
+            elif kwargs.__contains__('keep') and not kwargs['keep']:
+                command = 'no'
+                kwargs.pop('keep')
+            else:
+                command = None
 
-            num_of_thread = 10
             query_info = {}
 
             for key, value in kwargs.items():
@@ -188,108 +186,54 @@ class PixivDB(dict):
             if query_info.__contains__('date_before') and query_info.__contains__('date_after'):
                 assert query_info['date_before'] >= query_info['date_after']
 
-            items_slice = self._dict_slice(self, num_of_thread)
-            params = list(zip(items_slice, [query_info for i in range(num_of_thread)]))
-            pool = ThreadPool()
-            items_slice = pool.map(self._filter, params)
+            result = list(filter(lambda illust: PixivDB._is_satisfied(illust, query_info), self))
 
-            print('{} results found.'.format(len(self._merge_dict(items_slice))))
-            command = input('Do you want to keep result? Type \'yes\' to keep, \'no\' to abandon.\n-> ')
-            while command.upper() not in ['YES', 'NO']:
-                command = input('Command not found. Type \'yes\' to keep, \'no\' to abandon.\n-> ')
-            if command.upper() == 'YES':
-                self.empty()
-                self.update(self._merge_dict(items_slice))
-            elif command.upper() == 'NO':
-                pass
-
-        return PixivDB(self)
-
-    def empty(self):
-        for key in copy.copy(self).keys():
-            self.pop(key)
-        return self
+            print('{} results found.'.format(len(result)))
+            if not command:
+                command = input('Do you want to keep result? Type \'yes\' to keep, \'no\' to abandon.\n-> ')
+                while command.upper() not in ['YES', 'NO']:
+                    command = input('Command not found. Type \'yes\' to keep, \'no\' to abandon.\n-> ')
+                if command.upper() == 'YES':
+                    self.clear()
+                    self.extend(result)
+                elif command.upper() == 'NO':
+                    pass
+            else:
+                self.clear()
+                self.extend(result)
 
     @staticmethod
-    def _filter(params):
-        illusts = params[0]
-        query_info = params[1]
-        for key, value in copy.copy(illusts).items():
-            if query_info.__contains__('views_lower_bound'):
-                if not value['total_view'] >= query_info['views_lower_bound']:
-                    illusts.pop(key)
-                    continue
-            if query_info.__contains__('views_upper_bound'):
-                if not value['total_view'] <= query_info['views_upper_bound']:
-                    illusts.pop(key)
-                    continue
-            if query_info.__contains__('bookmarks_lower_bound'):
-                if not value['total_bookmarks'] >= query_info['bookmarks_lower_bound']:
-                    illusts.pop(key)
-                    continue
-            if query_info.__contains__('bookmarks_upper_bound'):
-                if not value['total_bookmarks'] <= query_info['bookmarks_lower_bound']:
-                    illusts.pop(key)
-                    continue
-            if query_info.__contains__('type'):
-                if not value['type'] in query_info['type'] or not value['type'] == query_info['type']:
-                    illusts.pop(key)
-                    continue
-            if query_info.__contains__('date_before'):
-                if not value['create_date'] <= query_info['date_before']:
-                    illusts.pop(key)
-                    continue
-            if query_info.__contains__('date_after'):
-                if not value['create_date'] >= query_info['date_after']:
-                    illusts.pop(key)
-                    continue
-            if query_info.__contains__('R_18_filter'):
-                if query_info['R_18_filter'] and 'R-18' in [i['name'] for i in value['tags']]:
-                    illusts.pop(key)
-                    continue
-            if query_info.__contains__('R_18G_filter'):
-                if query_info['R_18G_filter'] and 'R-18G' in [i['name'] for i in value['tags']]:
-                    illusts.pop(key)
-                    continue
-            if query_info.__contains__('rank'):
-                if not value['rank'] <= query_info['rank']:
-                    illusts.pop(key)
-                    continue
-        return illusts
-
-    @staticmethod
-    def _dict_slice(illusts, num):
-        """
-        Slice a dict into a list of sub_dict
-        :param num: Int
-        :param illusts: Dict
-        :return: List of dicts
-        """
-        chunk = len(illusts)//num
-        items_slice = []
-        buffer = {}
-        count = 0
-        for key, value in illusts.items():
-            buffer.update({key:value})
-            count += 1
-            if count%chunk == 0 and count <= chunk*(num-1):
-                items_slice.append(buffer)
-                buffer = {}
-        items_slice.append(buffer)
-        return items_slice
-
-    @staticmethod
-    def _merge_dict(items_slice):
-        """
-        Merge dicts into a dict
-        :param items_slice: List of dicts
-        :return: dict
-        """
-        buffer = {}
-        for d in items_slice:
-            buffer.update(d)
-        return buffer
-
-
+    def _is_satisfied(illust, query_info):
+        if query_info.__contains__('views_lower_bound'):
+            if not illust['total_view'] >= query_info['views_lower_bound']:
+                return False
+        if query_info.__contains__('views_upper_bound'):
+            if not illust['total_view'] <= query_info['views_upper_bound']:
+                return False
+        if query_info.__contains__('bookmarks_lower_bound'):
+            if not illust['total_bookmarks'] >= query_info['bookmarks_lower_bound']:
+                return False
+        if query_info.__contains__('bookmarks_upper_bound'):
+            if not illust['total_bookmarks'] <= query_info['bookmarks_lower_bound']:
+                return False
+        if query_info.__contains__('type'):
+            if not illust['type'] in query_info['type'] or not illust['type'] == query_info['type']:
+                return False
+        if query_info.__contains__('date_before'):
+            if not illust['create_date'] <= query_info['date_before']:
+                return False
+        if query_info.__contains__('date_after'):
+            if not illust['create_date'] >= query_info['date_after']:
+                return False
+        if query_info.__contains__('R_18_filter'):
+            if query_info['R_18_filter'] and 'R-18' in [i['name'] for i in illust['tags']]:
+                return False
+        if query_info.__contains__('R_18G_filter'):
+            if query_info['R_18G_filter'] and 'R-18G' in [i['name'] for i in illust['tags']]:
+                return False
+        if query_info.__contains__('rank') and illust.__contains__('rank'):
+            if not illust['rank'] <= query_info['rank']:
+                return False
+        return True
 
 
