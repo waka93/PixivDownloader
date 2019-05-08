@@ -39,7 +39,7 @@ filter | Str | 'for_ios' | 'for_ios'
 type | Str | 'illust' | 'illsut', 'novel'
 
 ```python
-pixiv.search(word=['スカサハ', 'FGO'])
+pixiv.search(word=['アイアンマン'])
 ```
 
 #### Filter
@@ -60,8 +60,8 @@ R_18G_filter | Boolean |  |
 rank | Int | | only works with the results you get from ranking method
 
 ```python
-pixiv.illusts.filter(views_lower_bound=200000, bookmarks_lower_bound=10000, R_18_filter=True, R_18G_filter=True)
-pixiv.novels.filter(views_lower_bound=5000, bookmarks_lower_bound=2000, R_18_filter=True, R_18G_filter=True)
+pixiv.illusts.filter(views_lower_bound=200000, bookmarks_lower_bound=10000)
+pixiv.novels.filter(views_lower_bound=5000, bookmarks_lower_bound=2000)
 ```
 
 #### Download
