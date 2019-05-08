@@ -72,7 +72,7 @@ Download search or filtered results to disk
 pixiv.download('path_to_folder')
 ```
 
-![demo](https://github.com/waka93/PixivDownloader/blob/master/demo/20180702-023013.png)
+![demo](https://github.com/waka93/PixivDownloader/blob/master/demo/20190508-002038.png)
 
 #### Trending
 
